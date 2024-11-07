@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Detection</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        video, canvas {
+            display: block;
+            margin: 10px auto;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>pH Detection</h1>
+
+    <!-- Camera Interface -->
+    <video id="video" width="300" height="300" autoplay></video>
+    <button id="capture">Capture Image</button>
+    <canvas id="canvas" width="300" height="300" style="display: none;"></canvas>
+    <button id="upload" style="display: none;">Upload for Prediction</button>
+
+    <!-- JavaScript for Camera Capture -->
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const uploadButton = document.getElementById('upload');
+
+        // Start the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error("Error accessing the camera: ", err);
+            });
+
+        // Capture the image
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'block';
+            uploadButton.style.display = 'block';
+        });
+
+        // Upload the captured image
+        uploadButton.addEventListener('click', async () => {
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('file', blob, 'image.png');
+
+                // Send the image to the Flask server
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                alert(`Predicted pH: ${result.predicted_pH}`);
+            }, 'image/png');
+        });
+    </script>
+</body>
+</html>
